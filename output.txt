@@ -592,3 +592,35 @@
 147.75.230.160,443,US,Inc.
 147.75.230.207,443,US,Inc.
 147.135.10.209,443,US,OVH US LLC
+139.162.133.162,20091,DE,Akamai Technologies, Inc.
+139.162.133.162,15458,DE,Akamai Technologies, Inc.
+139.162.133.162,15675,DE,Akamai Technologies, Inc.
+139.162.133.162,17001,DE,Akamai Technologies, Inc.
+139.162.133.162,11285,DE,Akamai Technologies, Inc.
+139.162.133.162,27936,DE,Akamai Technologies, Inc.
+139.162.133.162,11511,DE,Akamai Technologies, Inc.
+139.162.133.162,26896,DE,Akamai Technologies, Inc.
+139.162.133.162,24461,DE,Akamai Technologies, Inc.
+139.162.133.162,25657,DE,Akamai Technologies, Inc.
+139.162.133.162,36075,DE,Akamai Technologies, Inc.
+139.162.133.162,31804,DE,Akamai Technologies, Inc.
+139.162.133.162,42779,DE,Akamai Technologies, Inc.
+139.162.133.162,25351,DE,Akamai Technologies, Inc.
+139.162.133.162,34956,DE,Akamai Technologies, Inc.
+139.162.133.162,32856,DE,Akamai Technologies, Inc.
+139.162.133.162,36355,DE,Akamai Technologies, Inc.
+139.162.133.162,48805,DE,Akamai Technologies, Inc.
+139.162.133.162,56661,DE,Akamai Technologies, Inc.
+139.162.133.162,52982,DE,Akamai Technologies, Inc.
+139.162.133.162,51241,DE,Akamai Technologies, Inc.
+139.162.133.162,58990,DE,Akamai Technologies, Inc.
+139.162.133.162,42865,DE,Akamai Technologies, Inc.
+139.162.133.162,31956,DE,Akamai Technologies, Inc.
+139.162.133.162,41419,DE,Akamai Technologies, Inc.
+139.162.133.162,34842,DE,Akamai Technologies, Inc.
+139.162.133.162,46785,DE,Akamai Technologies, Inc.
+139.162.133.162,54591,DE,Akamai Technologies, Inc.
+139.162.133.162,58148,DE,Akamai Technologies, Inc.
+139.162.145.35,8443,DE,Akamai Technologies, Inc.
+150.230.214.172,16957,JP,Oracle Corporation
+78.40.117.65,8443,SE,ALEXHOST SRL
