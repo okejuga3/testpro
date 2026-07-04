@@ -57,7 +57,7 @@ function extractIpPort(line: string): ProxyData | null {
     if (ip && port) {
         let isp = "-";
         if (parts.length >= 3 && isNaN(Number(parts[parts.length - 1]))) {
-            isp = parts[parts.length - 1].replace(/["']/g, '');
+            isp = isp.replace(/,/g, '.');
         }
         return { ip, port: parseInt(port), inputIsp: isp, raw: `${ip}:${port}` };
     }
