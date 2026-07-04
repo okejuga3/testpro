@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as tls from 'tls';
 
+// Tentukan path ke root folder
 const BASE_DIR = path.resolve(__dirname, '..');
 const RAW_FILE = path.join(BASE_DIR, 'rawProxyList.txt');
 const LIST_FILE = path.join(BASE_DIR, 'ProxyList.txt');
@@ -40,6 +41,7 @@ function extractIpPort(line: string): ProxyData | null {
     line = line.trim();
     if (!line) return null;
     
+    // Pecah string berdasarkan koma, tapi simpan string aslinya untuk mengambil ISP
     const parts = line.split(',').map(p => p.trim());
     const match = parts[0].match(/^([a-zA-Z0-9.\-]+)(?:\s*[:,\-]\s*)(\d+)/);
     
@@ -56,9 +58,26 @@ function extractIpPort(line: string): ProxyData | null {
     
     if (ip && port) {
         let isp = "-";
-        if (parts.length >= 3 && isNaN(Number(parts[parts.length - 1]))) {
-            isp = isp.replace(/,/g, '.');
+        
+        if (parts.length > 2) {
+             // Jika elemen ke-3 bukan angka (biasanya kode negara)
+             if (isNaN(Number(parts[2]))) {
+                 isp = parts.slice(2).join(',').replace(/["']/g, '').trim();
+                 
+                 // Jika elemen ke-3 adalah kode negara (2 huruf), buang kode negara tersebut
+                 if (parts[2].length === 2 && parts.length > 3) {
+                     isp = parts.slice(3).join(',').replace(/["']/g, '').trim();
+                 }
+             } else {
+                 isp = parts.slice(-1)[0].replace(/["']/g, '').trim();
+             }
         }
+
+        if (!isp) isp = "-";
+        
+        // MENGGANTI KOMA DENGAN TITIK PADA NAMA ISP
+        isp = isp.replace(/,/g, '.'); 
+
         return { ip, port: parseInt(port), inputIsp: isp, raw: `${ip}:${port}` };
     }
     return null;
@@ -71,7 +90,6 @@ async function getIspGeo(ipAddress: string): Promise<string> {
             headers: { 'User-Agent': getRandomUA() },
             signal: AbortSignal.timeout(3000)
         });
-        // FIX: Tambahkan ": any" agar TypeScript tidak menganggapnya 'unknown'
         const geo: any = await res.json();
         return geo.isp || geo.as || "-";
     } catch {
@@ -80,7 +98,6 @@ async function getIspGeo(ipAddress: string): Promise<string> {
                 headers: { 'User-Agent': getRandomUA() },
                 signal: AbortSignal.timeout(3000)
             });
-            // FIX: Tambahkan ": any"
             const geo: any = await res.json();
             return geo.connection?.isp || geo.connection?.asn || "-";
         } catch {
@@ -174,6 +191,9 @@ async function checkProxyOnce(proxyData: ProxyData): Promise<ActiveResult | null
                 if (isp === "-") {
                     isp = await getIspGeo(clientIp);
                 }
+                // Pastikan koma dari hasil API juga diganti jika ada
+                isp = isp.replace(/,/g, '.');
+                
                 return { ip, port, delay, country, colo, isp };
             }
         }
@@ -196,7 +216,6 @@ async function checkProxyWithRetry(proxyData: ProxyData, maxRetries = 3): Promis
 }
 
 // --- CONCURRENCY CONTROLLER ---
-// FIX: Mempertegas bahwa 'fn' bisa mengembalikan 'null', tetapi hasil arraynya pasti tidak ada 'null'
 async function runWithConcurrency<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R | null>): Promise<R[]> {
     const results: R[] = [];
     let i = 0;
@@ -248,7 +267,6 @@ async function main() {
 
     let processed = 0;
     
-    // FIX: Mempertegas tipe data generik di sini <ProxyData, ActiveResult>
     const activeProxies = await runWithConcurrency<ProxyData, ActiveResult>(validProxies, 45, async (proxy) => {
         const res = await checkProxyWithRetry(proxy);
         processed++;
@@ -262,7 +280,6 @@ async function main() {
     console.log(`[+] Total Active: ${activeProxies.length} dari ${validProxies.length}\n`);
 
     if (activeProxies.length > 0) {
-        // Karena sudah ditambahkan tipe tegas, error "a atau b is possibly null" akan hilang
         activeProxies.sort((a, b) => a.country.localeCompare(b.country));
 
         // 1. TIMPA ProxyList.txt
