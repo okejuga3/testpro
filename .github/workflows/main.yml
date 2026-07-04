@@ -25,11 +25,13 @@ jobs:
         with:
           node-version: '18' # Harus versi 18 ke atas karena menggunakan fetch API
 
-      - name: Install TypeScript & ts-node
-        run: npm install -g ts-node typescript @types/node
+      - name: Install Dependencies
+        # Mengganti ts-node dengan tsx
+        run: npm install -g typescript @types/node tsx
 
       - name: Jalankan Proxy Scanner
-        run: ts-node Helper/proxyip.ts
+        # Mengeksekusi script menggunakan tsx
+        run: tsx Helper/proxyip.ts
 
       - name: Commit dan Push Hasil
         run: |
