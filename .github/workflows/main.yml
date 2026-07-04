@@ -1,0 +1,45 @@
+name: Daily Proxy Scanner
+
+on:
+  schedule:
+    # Berjalan setiap hari pada pukul 00:00 UTC (sekitar pukul 07:00 WIB)
+    - cron: '0 0 * * *'
+  
+  # Menambahkan opsi ini agar Anda tetap bisa menjalankannya secara manual via tombol di GitHub
+  workflow_dispatch: 
+
+jobs:
+  scan-and-update:
+    runs-on: ubuntu-latest
+    
+    # Memberikan izin agar GitHub Action bisa melakukan push (menulis) ke repositori
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repositori
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18' # Harus versi 18 ke atas karena menggunakan fetch API
+
+      - name: Install TypeScript & ts-node
+        run: npm install -g ts-node typescript
+
+      - name: Jalankan Proxy Scanner
+        run: ts-node Helper/proxyip.ts
+
+      - name: Commit dan Push Hasil
+        run: |
+          # Konfigurasi identitas bot git
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Tambahkan file yang dimodifikasi oleh script
+          git add ProxyList.txt KvProxyList.json output.txt
+          
+          # Cek apakah ada perubahan file. Jika ada, lakukan commit dan push. 
+          # Jika tidak ada perubahan (misal tidak ada proxy aktif), lewati agar tidak error.
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update proxy list harian" && git push)
