@@ -2,12 +2,11 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as tls from 'tls';
 
-// Tentukan path ke root folder
 const BASE_DIR = path.resolve(__dirname, '..');
 const RAW_FILE = path.join(BASE_DIR, 'rawProxyList.txt');
 const LIST_FILE = path.join(BASE_DIR, 'ProxyList.txt');
 const KV_FILE = path.join(BASE_DIR, 'KvProxyList.json');
-const OUTPUT_FILE = path.join(BASE_DIR, 'output.txt'); // File baru untuk append tanpa duplikat
+const OUTPUT_FILE = path.join(BASE_DIR, 'output.txt');
 
 const USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -72,7 +71,8 @@ async function getIspGeo(ipAddress: string): Promise<string> {
             headers: { 'User-Agent': getRandomUA() },
             signal: AbortSignal.timeout(3000)
         });
-        const geo = await res.json();
+        // FIX: Tambahkan ": any" agar TypeScript tidak menganggapnya 'unknown'
+        const geo: any = await res.json();
         return geo.isp || geo.as || "-";
     } catch {
         try {
@@ -80,7 +80,8 @@ async function getIspGeo(ipAddress: string): Promise<string> {
                 headers: { 'User-Agent': getRandomUA() },
                 signal: AbortSignal.timeout(3000)
             });
-            const geo = await res.json();
+            // FIX: Tambahkan ": any"
+            const geo: any = await res.json();
             return geo.connection?.isp || geo.connection?.asn || "-";
         } catch {
             return "-";
@@ -195,7 +196,8 @@ async function checkProxyWithRetry(proxyData: ProxyData, maxRetries = 3): Promis
 }
 
 // --- CONCURRENCY CONTROLLER ---
-async function runWithConcurrency<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+// FIX: Mempertegas bahwa 'fn' bisa mengembalikan 'null', tetapi hasil arraynya pasti tidak ada 'null'
+async function runWithConcurrency<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R | null>): Promise<R[]> {
     const results: R[] = [];
     let i = 0;
     
@@ -203,7 +205,9 @@ async function runWithConcurrency<T, R>(items: T[], limit: number, fn: (item: T)
         while (i < items.length) {
             const currentIndex = i++;
             const res = await fn(items[currentIndex]);
-            if (res) results.push(res);
+            if (res !== null && res !== undefined) {
+                results.push(res);
+            }
         }
     });
     
@@ -243,7 +247,9 @@ async function main() {
     console.log(`[*] Memulai scan dengan 45 workers...`);
 
     let processed = 0;
-    const activeProxies = await runWithConcurrency(validProxies, 45, async (proxy) => {
+    
+    // FIX: Mempertegas tipe data generik di sini <ProxyData, ActiveResult>
+    const activeProxies = await runWithConcurrency<ProxyData, ActiveResult>(validProxies, 45, async (proxy) => {
         const res = await checkProxyWithRetry(proxy);
         processed++;
         if (processed % 50 === 0 || processed === validProxies.length) {
@@ -256,14 +262,15 @@ async function main() {
     console.log(`[+] Total Active: ${activeProxies.length} dari ${validProxies.length}\n`);
 
     if (activeProxies.length > 0) {
+        // Karena sudah ditambahkan tipe tegas, error "a atau b is possibly null" akan hilang
         activeProxies.sort((a, b) => a.country.localeCompare(b.country));
 
-        // 1. TIMPA ProxyList.txt (Berisi HANYA hasil scan saat ini)
+        // 1. TIMPA ProxyList.txt
         const txtOutput = activeProxies.map(p => `${p.ip},${p.port},${p.country},${p.isp}`).join('\n');
         fs.writeFileSync(LIST_FILE, txtOutput, 'utf-8');
         console.log(`[+] Tersimpan (overwrite): ${LIST_FILE}`);
 
-        // 2. TIMPA KvProxyList.json (Berisi HANYA hasil scan saat ini)
+        // 2. TIMPA KvProxyList.json
         const kvOutput: Record<string, string[]> = {};
         for (const p of activeProxies) {
             if (!kvOutput[p.country]) {
@@ -274,22 +281,19 @@ async function main() {
         fs.writeFileSync(KV_FILE, JSON.stringify(kvOutput, null, 2), 'utf-8');
         console.log(`[+] Tersimpan (overwrite): ${KV_FILE}`);
 
-        // 3. APPEND output.txt TANPA DUPLIKASI (Menumpuk dari waktu ke waktu)
+        // 3. APPEND output.txt TANPA DUPLIKASI
         const existingOutput = new Set<string>();
         
-        // Baca file jika sudah ada dan masukkan ke dalam Set
         if (fs.existsSync(OUTPUT_FILE)) {
             const oldData = fs.readFileSync(OUTPUT_FILE, 'utf-8').split('\n');
             for (const line of oldData) {
                 const parts = line.split(',');
                 if (parts.length >= 2) {
-                    // Gunakan IP:PORT sebagai identitas unik
                     existingOutput.add(`${parts[0].trim()}:${parts[1].trim()}`);
                 }
             }
         }
 
-        // Cari proxy baru yang belum ada di output.txt
         const newToOutput = activeProxies.filter(p => !existingOutput.has(`${p.ip}:${p.port}`));
 
         if (newToOutput.length > 0) {
