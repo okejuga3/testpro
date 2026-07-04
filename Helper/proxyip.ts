@@ -267,7 +267,7 @@ async function main() {
 
     let processed = 0;
     
-    const activeProxies = await runWithConcurrency<ProxyData, ActiveResult>(validProxies, 45, async (proxy) => {
+    const activeProxies = await runWithConcurrency<ProxyData, ActiveResult>(validProxies, 1000, async (proxy) => {
         const res = await checkProxyWithRetry(proxy);
         processed++;
         if (processed % 50 === 0 || processed === validProxies.length) {
