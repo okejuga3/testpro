@@ -26,7 +26,7 @@ jobs:
           node-version: '18' # Harus versi 18 ke atas karena menggunakan fetch API
 
       - name: Install TypeScript & ts-node
-        run: npm install -g ts-node typescript
+        run: npm install -g ts-node typescript @types/node
 
       - name: Jalankan Proxy Scanner
         run: ts-node Helper/proxyip.ts
